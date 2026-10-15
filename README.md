@@ -150,7 +150,7 @@ app/src/main/res/
 - AndroidIDE
 - 以及所有为 Android 开源社区做出贡献的开发者
 
-同时也感谢 BBPlayer 同类音乐播放器项目带来的设计灵感。
+同时也感谢 [BBPlayer](https://github.com/bbplayer-app/BBPlayer) 同类音乐播放器项目带来的设计灵感。
 
 ## 开源许可
 
