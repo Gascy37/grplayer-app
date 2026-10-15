@@ -141,7 +141,7 @@ app/src/main/res/
 
 ## 版本历史
 
-- 版本更新记录请查看 [GRPlayer Releases](https://github.com/gascy/GRPlayer/releases)。
+- 版本更新记录请查看 [Releases](https://github.com/Gascy37/grplayer-app/releases)。
 
 ## 致谢
 
