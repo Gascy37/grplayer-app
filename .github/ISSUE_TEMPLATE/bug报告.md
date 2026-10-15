@@ -1,7 +1,7 @@
 ---
 name: Bug报告
 about: 提交Bug帮助软件改进
-title: ''
+title: "[Bug]"
 labels: ''
 assignees: ''
 
