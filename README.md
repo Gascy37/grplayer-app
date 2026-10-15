@@ -139,6 +139,10 @@ app/src/main/res/
 - 本项目自身不包含用户画像、广告或主动上传个人数据的逻辑。
 - 网络请求会发送至所配置的 API 服务，请自行确认并是否使用。
 
+## 版本历史
+
+- 版本更新记录请查看 [GRPlayer Releases](https://github.com/gascy/GRPlayer/releases)。
+
 ## 致谢
 
 感谢以下开源项目与生态：
