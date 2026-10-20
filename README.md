@@ -3,7 +3,7 @@
 <img src="./images/icon.png" alt="logo" width="80" />
 <h1>GRPlayer</h1>
 
-一款使用 Java 构建的 Android 原生音乐播放器。支持网易云音乐搜索与播放，并兼容 B 站音乐区音频。更轻量、更顺手的搜索、后台播放、收藏夹、缓存导出、歌词体验、频谱可视化与图形均衡器。
+一款使用 Java 构建的 Android 原生的网易云音乐的第三方音乐播放器。更轻量简约、更炫酷沉浸、更顺手的搜索、收藏夹、缓存导出与歌词体验。
 
 ![Platform](https://img.shields.io/badge/Platform-Android-3DDC84?style=flat-square&logo=android&logoColor=white)
 ![Language](https://img.shields.io/badge/Language-Java-orange?style=flat-square&logo=openjdk&logoColor=white)
