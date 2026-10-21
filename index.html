@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="color-scheme" content="light dark">
+<title>GRPlayer</title>
+<style>
+  * { -webkit-tap-highlight-color: transparent; }
+  a, button, .btn, .nav-item, [tabindex] {
+    -webkit-tap-highlight-color: transparent;
+    outline: none;
+    -webkit-user-select: none;
+    user-select: none;
+  }
+  a:focus-visible,
+  button:focus-visible,
+  .btn:focus-visible,
+  .nav-item:focus-visible,
+  [tabindex]:focus-visible {
+    outline: 2px solid var(--md-primary);
+    outline-offset: 2px;
+  }
+  a:focus:not(:focus-visible),
+  button:focus:not(:focus-visible),
+  .btn:focus:not(:focus-visible),
+  .nav-item:focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  :root {
+    --md-primary: #6750A4;
+    --md-on-primary: #FFFFFF;
+    --md-primary-container: #EADDFF;
+    --md-on-primary-container: #21005D;
+    --md-secondary-container: #E8DEF8;
+    --md-on-secondary-container: #1D192B;
+    --md-surface: #FEF7FF;
+    --md-surface-container-low: #F7F2FA;
+    --md-surface-container: #F3EDF7;
+    --md-surface-container-high: #ECE6F0;
+    --md-on-surface: #1D1B20;
+    --md-on-surface-variant: #49454F;
+    --md-outline: #79747E;
+    --md-outline-variant: #CAC4D0;
+    --md-scrim: rgba(0, 0, 0, 0.32);
+    --md-hover: rgba(103, 80, 164, 0.08);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --md-primary: #D0BCFF;
+      --md-on-primary: #381E72;
+      --md-primary-container: #4F378B;
+      --md-on-primary-container: #EADDFF;
+      --md-secondary-container: #4A4458;
+      --md-on-secondary-container: #E8DEF8;
+      --md-surface: #141218;
+      --md-surface-container-low: #1D1B20;
+      --md-surface-container: #211F26;
+      --md-surface-container-high: #2B2930;
+      --md-on-surface: #E6E0E9;
+      --md-on-surface-variant: #CAC4D0;
+      --md-outline: #938F99;
+      --md-outline-variant: #49454F;
+      --md-scrim: rgba(0, 0, 0, 0.5);
+      --md-hover: rgba(208, 188, 255, 0.08);
+    }
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+
+  body {
+    background: var(--md-surface);
+    color: var(--md-on-surface);
+    font-family: sans-serif;
+    font-size: 16px;
+    line-height: 1.78;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    overflow: hidden;
+  }
+
+  a { color: inherit; }
+
+  .app {
+    position: relative;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
+  }
+
+  .sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    z-index: 100;
+    width: 132px;
+    overflow-y: auto;
+    padding: 16px 10px;
+    background: var(--md-surface-container-low);
+    border-radius: 0 22px 22px 0;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+    transform: translateX(-100%);
+    transition: transform 0.32s cubic-bezier(0.2, 0, 0, 1);
+  }
+  .sidebar::-webkit-scrollbar { display: none; }
+
+  .sidebar-brand {
+    display: block;
+    padding: 2px 10px 12px;
+    font-size: 14px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+    color: var(--md-on-surface);
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .sidebar nav {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+  }
+
+  .sidebar a.nav-item {
+    display: flex;
+    align-items: center;
+    height: 34px;
+    padding: 0 10px;
+    border-radius: 17px;
+    color: var(--md-on-surface-variant);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.02px;
+    white-space: nowrap;
+    transition: background 0.12s, color 0.12s;
+  }
+  .sidebar a.nav-item:hover {
+    background: var(--md-hover);
+    color: var(--md-on-surface);
+  }
+  .sidebar a.nav-item.active {
+    background: var(--md-secondary-container);
+    color: var(--md-on-secondary-container);
+    font-weight: 600;
+  }
+
+  .main {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    background: var(--md-surface);
+  }
+
+  .topbar {
+    flex: 0 0 60px;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0 10px;
+    background: var(--md-surface);
+  }
+  .menu-btn {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: transparent;
+    color: var(--md-on-surface);
+    border-radius: 24px;
+    cursor: pointer;
+    transition: background 0.12s;
+    flex: 0 0 auto;
+  }
+  .menu-btn:hover { background: var(--md-hover); }
+  .menu-btn svg { width: 24px; height: 24px; }
+  .page-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--md-on-surface);
+    margin-left: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .content {
+    flex: 1;
+    overflow-y: auto;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .content::-webkit-scrollbar { display: none; }
+
+  .page-wrap {
+    max-width: 820px;
+    margin: 0 auto;
+    padding: 52px 56px 96px;
+  }
+
+  .page { display: none; }
+  .page.active { display: block; }
+
+  @media (min-width: 821px) {
+    .main {
+      margin-left: 0;
+      transition: margin-left 0.32s cubic-bezier(0.2, 0, 0, 1);
+    }
+    .app.sidebar-open .main { margin-left: 132px; }
+    .app.sidebar-open .sidebar { transform: translateX(0); }
+  }
+
+  .scrim { display: none; }
+
+  @media (max-width: 820px) {
+    .sidebar {
+      width: 220px;
+      padding: 16px 10px;
+      border-radius: 0 22px 22px 0;
+      padding-top: max(16px, env(safe-area-inset-top));
+    }
+    .sidebar-brand {
+      font-size: 16px;
+      padding: 2px 14px 14px;
+    }
+    .sidebar a.nav-item {
+      height: 42px;
+      border-radius: 21px;
+      font-size: 14.5px;
+      padding: 0 14px;
+    }
+    .app.sidebar-open .sidebar { transform: translateX(0); }
+    .main {
+      transform: translateX(0);
+      transition: transform 0.32s cubic-bezier(0.2, 0, 0, 1);
+    }
+    .app.sidebar-open .main { transform: translateX(52px); }
+
+    .scrim {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 90;
+      background: var(--md-scrim);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.24s;
+    }
+    .app.sidebar-open .scrim { opacity: 1; pointer-events: auto; }
+
+    .page-wrap { padding: 30px 20px 72px; }
+  }
+
+  .page#page-home.active {
+    display: block;
+    padding-top: 13vh;
+  }
+  .hero-icon {
+    display: block;
+    width: 120px;
+    height: 120px;
+    border-radius: 26px;
+    object-fit: cover;
+    margin: 0 0 32px;
+    background: transparent;
+  }
+  .hero-title {
+    font-size: 56px;
+    font-weight: 600;
+    line-height: 1.08;
+    letter-spacing: -0.025em;
+    margin: 0 0 18px;
+    color: var(--md-on-surface);
+  }
+  .hero-tagline {
+    font-size: 19px;
+    line-height: 1.6;
+    color: var(--md-on-surface-variant);
+    margin: 0 0 40px;
+    max-width: 540px;
+  }
+  .hero-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin: 0;
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 44px;
+    padding: 0 26px;
+    border-radius: 22px;
+    font-size: 15px;
+    font-weight: 500;
+    letter-spacing: 0.1px;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: background 0.12s, box-shadow 0.12s;
+    font-family: inherit;
+  }
+  .btn-filled {
+    background: var(--md-primary);
+    color: var(--md-on-primary);
+  }
+  .btn-filled:hover {
+    box-shadow: 0 1px 3px rgba(0,0,0,0.18), 0 1px 2px rgba(0,0,0,0.12);
+  }
+  .btn-outlined {
+    background: transparent;
+    color: var(--md-primary);
+    border: 1px solid var(--md-outline);
+  }
+  .btn-outlined:hover { background: var(--md-hover); }
+  .btn svg { display: block; flex: 0 0 auto; }
+
+  .md-content .lead {
+    color: var(--md-on-surface-variant);
+    font-size: 18px;
+    line-height: 1.7;
+    margin: 0 0 18px;
+  }
+
+  .md-content hr {
+    border: none;
+    border-top: 1px solid var(--md-outline-variant);
+    margin: 20px 0 26px;
+  }
+
+  .md-content h3 {
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1.35;
+    letter-spacing: -0.01em;
+    margin: 40px 0 12px;
+    color: var(--md-on-surface);
+  }
+  .md-content h3:first-child { margin-top: 0; }
+  .md-content hr + h3 { margin-top: 0; }
+
+  .md-content p { margin: 0 0 15px; }
+  .md-content p:last-child { margin-bottom: 0; }
+
+  .md-content ul { margin: 0 0 15px; padding-left: 26px; }
+  .md-content ul:last-child { margin-bottom: 0; }
+  .md-content li { margin: 6px 0; }
+  .md-content li::marker { color: var(--md-on-surface-variant); }
+
+  .md-content strong { font-weight: 600; }
+
+  .md-content a {
+    color: var(--md-primary);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+  .md-content a:hover {
+    text-decoration-thickness: 2px;
+  }
+  .md-content a.btn {
+    text-decoration: none;
+  }
+  .md-content a.btn-filled { color: var(--md-on-primary); }
+  .md-content a.btn-outlined { color: var(--md-primary); }
+
+  .md-content code {
+    font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.88em;
+    background: var(--md-surface-container);
+    color: var(--md-on-surface);
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+
+  .md-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 22px;
+    font-size: 14.5px;
+    line-height: 1.65;
+  }
+  .md-content table:last-child { margin-bottom: 0; }
+
+  .md-content table th {
+    text-align: left;
+    font-weight: 600;
+    padding: 12px 16px;
+    background: var(--md-surface-container);
+    color: var(--md-on-surface);
+    border-bottom: 1px solid var(--md-outline-variant);
+  }
+  .md-content table th:first-child {
+    border-top-left-radius: 8px;
+  }
+  .md-content table th:last-child {
+    border-top-right-radius: 8px;
+  }
+
+  .md-content table td {
+    padding: 12px 16px;
+    color: var(--md-on-surface);
+    border-bottom: 1px solid var(--md-outline-variant);
+    vertical-align: top;
+  }
+  .md-content table tr:last-child td {
+    border-bottom: none;
+  }
+
+  @media (max-width: 820px) {
+    .md-content table {
+      font-size: 13.5px;
+    }
+    .md-content table th,
+    .md-content table td {
+      padding: 10px 12px;
+    }
+  }
+
+  @media (max-width: 820px) {
+    .hero-icon {
+      width: 104px;
+      height: 104px;
+      border-radius: 22px;
+      margin-bottom: 28px;
+    }
+    .hero-title { font-size: 42px; }
+    .hero-tagline { font-size: 17px; }
+    .md-content h3 { font-size: 19px; margin-top: 34px; }
+    .md-content .lead { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+
+  <aside class="sidebar" id="sidebar">
+    <a href="#home" class="sidebar-brand" data-page="home">GRPlayer</a>
+    <nav>
+      <a class="nav-item" href="#home"         data-page="home">主页</a>
+      <a class="nav-item" href="#sources"      data-page="sources">音源</a>
+      <a class="nav-item" href="#quality"      data-page="quality">音质</a>
+      <a class="nav-item" href="#network"      data-page="network">网络防护</a>
+      <a class="nav-item" href="#player"       data-page="player">播放内核</a>
+      <a class="nav-item" href="#equalizer"    data-page="equalizer">均衡器</a>
+      <a class="nav-item" href="#spectrum"     data-page="spectrum">频谱</a>
+      <a class="nav-item" href="#visual"       data-page="visual">背景与封面</a>
+      <a class="nav-item" href="#lyrics"       data-page="lyrics">歌词</a>
+      <a class="nav-item" href="#library"      data-page="library">曲库</a>
+      <a class="nav-item" href="#cache-export" data-page="cache-export">缓存与导出</a>
+      <a class="nav-item" href="#floating"     data-page="floating">悬浮窗</a>
+      <a class="nav-item" href="#ui"           data-page="ui">界面</a>
+      <a class="nav-item" href="#background"   data-page="background">省电与后台</a>
+      <a class="nav-item" href="#update"       data-page="update">检查更新</a>
+      <a class="nav-item" href="#requirements" data-page="requirements">系统要求</a>
+      <a class="nav-item" href="#tech"         data-page="tech">技术栈</a>
+      <a class="nav-item" href="#build"        data-page="build">构建与运行</a>
+      <a class="nav-item" href="#privacy"      data-page="privacy">隐私</a>
+      <a class="nav-item" href="#credits"      data-page="credits">致谢</a>
+      <a class="nav-item" href="#license"      data-page="license">许可</a>
+    </nav>
+  </aside>
+
+  <div class="scrim" id="scrim"></div>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="menu-btn" id="menuBtn" aria-label="切换导航">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none"
+             stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <path d="M4 6h16M4 12h16M4 18h16"/>
+        </svg>
+      </button>
+      <span class="page-title" id="pageTitle">GRPlayer</span>
+    </header>
+
+    <div class="content" id="content">
+      <div class="page-wrap">
+
+        <section class="page active" id="page-home" data-title="GRPlayer">
+          <div class="md-content"></div>
+        </section>
+
+        <section class="page" id="page-sources" data-title="音源">
+          <div class="md-content"></div>
+        </section>
+
+        <section class="page" id="page-quality" data-title="音质">
+          <div class="md-content"></div>
+        </section>
+
+        <section class="page" id="page-network" data-title="网络防护">
+          <div class="md-content"></div>
+        </section>
+
+        <section class="page" id="page-player" data-title="播放内核">
+          <div class="md-content"></div>
+        </section>
+
+        <section class="page" id="page-equalizer" data-title="均衡器">
+          <div class="md-content"></div>
+        </section>
+
+        <section class="page" id="page-spectrum" data-title="频谱">
+          <div class="md-content"></div>
+        </section>
+
+        <section class="page" id="page-visual" data-title="背景与封面">
+          <div class="md-content"></div>
+        </section>
+
+        <section class="page" id="page-lyrics" data-title="歌词">
+          <div class="md-content"></div>
+        </section>
+
+        <section class="page" id="page-library" data-title="曲库">
+          <div class="md-content"></div>
+        </section>
+
+        <section class="page" id="page-cache-export" data-title="缓存与导出">
+          <div class="md-content"></div>
+        </section>
+
+        <section class="page" id="page-floating" data-title="悬浮窗">
+          <div class="md-content"></div>
+        </section>
+
+        <section class="page" id="page-ui" data-title="界面">
+          <div class="md-content"></div>
+        </section>
+
+        <section class="page" id="page-background" data-title="省电与后台">
+          <div class="md-content"></div>
+        </section>
+
+        <section class="page" id="page-update" data-title="检查更新">
+          <div class="md-content"></div>
+        </section>
+
+        <section class="page" id="page-requirements" data-title="系统要求">
+          <div class="md-content"></div>
+        </section>
+
+        <section class="page" id="page-tech" data-title="技术栈">
+          <div class="md-content"></div>
+        </section>
+
+        <section class="page" id="page-build" data-title="构建与运行">
+          <div class="md-content"></div>
+        </section>
+
+        <section class="page" id="page-privacy" data-title="隐私">
+          <div class="md-content"></div>
+        </section>
+
+        <section class="page" id="page-credits" data-title="致谢">
+          <div class="md-content"></div>
+        </section>
+
+        <section class="page" id="page-license" data-title="许可">
+          <div class="md-content"></div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  var MARKED_URL = 'https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js';
+  var MARKED_CACHE_KEY = 'grplayer_marked_cache_v12_0_2';
+
+  var APP_ICON_URL =
+    'https://raw.githubusercontent.com/Gascy37/grplayer-app/main/images/icon.png';
+  var APP_ICON_CACHE_KEY = 'grplayer_icon_cache_v1';
+
+  /* 下载图标（Material Design download） */
+  var DOWNLOAD_SVG =
+    '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
+    '<path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/>' +
+    '</svg>';
+
+  var GITHUB_SVG =
+    '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">' +
+    '<path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56v-2c-3.2.7-3.87-1.37-3.87-1.37-.52-1.33-1.27-1.69-1.27-1.69-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.68 1.25 3.33.95.1-.74.4-1.25.73-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.09-.12-.29-.51-1.46.11-3.05 0 0 .96-.31 3.15 1.18a10.94 10.94 0 0 1 5.74 0c2.19-1.49 3.15-1.18 3.15-1.18.62 1.59.23 2.76.11 3.05.73.8 1.18 1.83 1.18 3.09 0 4.42-2.69 5.39-5.25 5.68.41.36.78 1.06.78 2.13v3.16c0 .31.21.67.8.56A11.5 11.5 0 0 0 23.5 12C23.5 5.65 18.35.5 12 .5z"/>' +
+    '</svg>';
+
+  function injectScript(code) {
+    var s = document.createElement('script');
+    s.textContent = code;
+    document.head.appendChild(s);
+  }
+
+  function loadMarked(done) {
+    if (typeof marked !== 'undefined') { done(); return; }
+
+    var cached = null;
+    try { cached = localStorage.getItem(MARKED_CACHE_KEY); } catch (e) {}
+
+    if (cached && cached.length > 100) {
+      try {
+        injectScript(cached);
+        if (typeof marked !== 'undefined') { done(); return; }
+      } catch (e) {
+        try { localStorage.removeItem(MARKED_CACHE_KEY); } catch (e2) {}
+      }
+    }
+
+    fetch(MARKED_URL, { mode: 'cors', credentials: 'omit' })
+      .then(function (r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.text();
+      })
+      .then(function (code) {
+        if (!code || code.length < 100) throw new Error('内容异常');
+        try { localStorage.setItem(MARKED_CACHE_KEY, code); } catch (e) {}
+        injectScript(code);
+        if (typeof marked === 'undefined') throw new Error('执行失败');
+        done();
+      })
+      .catch(function () {
+        var s = document.createElement('script');
+        s.src = MARKED_URL;
+        s.onload = function () { done(); };
+        s.onerror = function () {
+          console.error('marked.js 加载失败');
+          done();
+        };
+        document.head.appendChild(s);
+      });
+  }
+
+  function loadHeroIcon(beforeNode) {
+    var icon = document.createElement('img');
+    icon.className = 'hero-icon';
+    icon.alt = 'GRPlayer 图标';
+    icon.decoding = 'async';
+
+    beforeNode.parentNode.insertBefore(icon, beforeNode);
+
+    var cached = null;
+    try { cached = localStorage.getItem(APP_ICON_CACHE_KEY); } catch (e) {}
+
+    if (cached) {
+      icon.src = cached;
+      return;
+    }
+
+    icon.loading = 'eager';
+    icon.src = APP_ICON_URL;
+
+    try {
+      fetch(APP_ICON_URL, { mode: 'cors', credentials: 'omit' })
+        .then(function (r) {
+          if (!r.ok) throw new Error('HTTP ' + r.status);
+          return r.blob();
+        })
+        .then(function (blob) {
+          if (!blob || !blob.type || blob.type.indexOf('image/') !== 0) return;
+          var reader = new FileReader();
+          reader.onload = function () {
+            try {
+              localStorage.setItem(APP_ICON_CACHE_KEY, reader.result);
+            } catch (e) {}
+          };
+          reader.readAsDataURL(blob);
+        })
+        .catch(function () {});
+    } catch (e) {}
+  }
+
+  var pageContent = {
+
+    home: `# GRPlayer
+
+一款使用 Java 构建的 Android 原生的网易云音乐的第三方音乐播放器，接入网易云与 B 站双音源。
+
+[下载 APK](https://github.com/Gascy37/grplayer-app/releases)
+[查看代码](https://github.com/Gascy37/grplayer-app)`,
+
+    sources: `网易云曲库与 B 站音乐区并行查询，结果按相关度混合排序。
+
+---
+
+### 搜索类型
+
+搜索支持单曲、歌手、专辑、歌单四种类型。单曲搜索时同时向网易云与 B 站发起请求，两边结果合并后按标题、歌手、专辑的相关度排序。任一侧失败或超时不会阻断另一侧，失败的音源会以提示形式告知。
+
+### B站限定音乐区
+
+B 站结果只保留音乐区（TID 3 / 28 / 29 / 30 / 31 / 59 / 130 / 193 / 194）的视频，避免把影视、生活等分区的内容混入歌曲结果。
+
+### 相关性排序
+
+标题完全匹配、前缀匹配、包含匹配依次加权，歌手与专辑命中再加权，最后按关键词在标题中的占比做长度校正。标题之外的字段命中权重递减。
+
+### 分页加载
+
+每页 20 条，滚动到底部自动加载，上限 100 条。首屏结果会被缓存，从历史记录重新进入时直接命中缓存。
+
+### 搜索历史
+
+保存最近 15 条记录，含关键词、搜索类型与搜索时间。
+
+| 操作 | 效果 |
+| --- | --- |
+| 点击历史项 | 重新进入该关键词的搜索结果页 |
+| 长按历史项 | 删除单条记录 |
+| 菜单清空 | 清空全部历史与结果缓存 |`,
+
+    quality: `九档音质、三处独立设置、四种兜底策略。
+
+---
+
+### 九档音质
+
+按网易云的音质等级组织。沉浸环绕声可选 c51 / ste / aac 三种子类型。
+
+| 档位 | 标识 | 备注 |
+| --- | --- | --- |
+| 标准音质 | \`standard\` | |
+| 极高音质 | \`exhigh\` | |
+| 无损音质 | \`lossless\` | |
+| Hi-Res 音质 | \`hires\` | |
+| 高清环绕声 | \`jyeffect\` | |
+| 沉浸环绕声 | \`sky\` | 可选 c51 / ste / aac |
+| 杜比全景声 | \`dolby\` | |
+| 臻音全景声 | \`vivid\` | |
+| 超清母带 | \`jymaster\` | |
+
+### 播放 / 缓存 / 导出独立设置
+
+三处音质互不影响。未解锁时分别最多可选到极高、Hi-Res、无损；输入解锁密码后可选全部九档。
+
+### B站音频
+
+B 站视频使用 dash 音频流，按 30280 / 30232 / 30216 的顺序取可用最高一档，来源标记为「B站音频」。网易云歌曲与 B 站音乐区视频音频走同一套播放、缓存、导出、收藏链路。
+
+### 四种兜底策略
+
+| 模式 | 行为 |
+| --- | --- |
+| 逐个后退 | 从用户选择的音质开始，逐级下降尝试（默认） |
+| 自动兼容 | 并发请求多个音质，先返回可用地址的胜出 |
+| 从最差向上 | 从标准音质开始逐级上升 |
+| 不回退固定 | 只用用户选择的音质，失败即失败 |
+
+### 音质学习
+
+自动兼容模式会记录每个音质的参与次数与胜出次数。参与超过 30 次却从未胜出的音质，会从竞速列表中移除；每 90 次竞速后统计清零重来。
+
+顺序模式按 60 个样本一批，取可用音质中占比最高的一档作为下一次的起始音质，每 3 批重新探测一次，避免长期停留在低音质。
+
+连续 3 次网络问题会触发 60 秒冷却，冷却期内不学习、不竞速。`,
+
+    network: `针对接口限流与网络抖动的几种处理方式。
+
+---
+
+### IP 伪装
+
+开启后每个请求携带随机生成的中国大陆 IPv4 地址，30 次请求后轮换。用于绕开按 IP 维度的接口限流。默认关闭，请根据实际使用场景与相关服务条款谨慎开启，只用于防止限流目的。
+
+### 重试
+
+获取播放地址失败时自动重试，可配置 0~5 次，间隔 0.5~5 秒。重试仅针对网络异常，不针对歌曲不存在等业务错误。
+
+### 限流识别
+
+HTTP 429、服务端返回的 message 含「频繁」「限流」「请求过」等关键词时，进入 30 秒冷却并尝试更换 IP。网易云与 B 站的冷却状态互相独立。
+
+### 连接预热
+
+App 启动时向 API 端点发送一个轻量请求，提前建立 TCP 连接，减少首次播放的等待时间。
+
+### 签名与密钥缓存
+
+需要签名或临时密钥的接口会自动缓存密钥，并支持内存与磁盘兜底，减少重复请求。`,
+
+    player: `基于 Media3 ExoPlayer 的播放链路，覆盖缓冲、缓存、焦点与通知。
+
+---
+
+### 缓冲与缓存
+
+音频缓冲最小 50 秒、最大 120 秒，开始播放后 1.5 秒起播、3 秒后停止加载。磁盘缓存 2GB，按 LRU 淘汰。
+
+### 音频焦点
+
+默认独占音频焦点，播放时会暂停其它应用。开启「与其他应用同时播放」后改为可压低音量的焦点模式，与其它应用共存，遇到对方播放时自动降低本应用音量。
+
+### 通知栏控制
+
+由 MediaSessionService 提供通知栏的播放、暂停、上一首、下一首控制。播放时自动进入前台，暂停时自动退出。
+
+### 播放顺序与循环
+
+| 模式 | 行为 |
+| --- | --- |
+| 顺序 | 按列表顺序播放，上一首按历史栈回退 |
+| 随机 | 随机跳转，并记录已播放项避免短期内重复 |
+| 循环 | 播完下一首 / 播完停止 / 单曲循环 |
+
+### 单曲播放
+
+从搜索结果点击单曲时，按单曲播放，避免误把整个搜索结果作为播放列表。
+
+### 静音跳过
+
+音频流中的静音段会被自动跳过，减少歌曲开头的空白等待。
+
+### 定时关闭
+
+播放页菜单可设置 1~999 分钟后自动暂停播放，菜单项会实时显示剩余时间。
+
+### 播放详情
+
+可查看播放来源、实际音质、缓存状态、文件大小、播放链接与封面链接，并支持复制。`,
+
+    equalizer: `15 段图形均衡器，覆盖 25Hz 到 16kHz。
+
+---
+
+### 参数
+
+15 个频段，中心频率从 25Hz 到 16kHz。增益范围 -10dB 到 +10dB，步进 0.2dB，可用滑块或 +/- 按钮微调。
+
+### 预设
+
+| 预设 | 说明 |
+| --- | --- |
+| 平坦 | 所有频段 0dB |
+| 开发者自用 | 中高频（1–4kHz）缓升 |
+| 开发者自用2 | 中高频（1–4kHz）缓升，幅度略低 |
+| 自定义 | 手动调整后自动保存，可从菜单恢复 |
+
+### 设备兼容
+
+基于 Android 的 DynamicsProcessing，需要 **Android 9.0 及以上**。优先按双声道创建，失败后回退到单声道。进入均衡器页面时暂停播放并锁定播放控件，退出时解锁，避免调节过程中误触。`,
+
+    spectrum: `封面周围的实时频谱，从音频流中截取 PCM 样本做 1024 点 FFT。
+
+---
+
+### 三种样式
+
+| 样式 | 说明 |
+| --- | --- |
+| 柱式 | 60 条柱体从封面边缘向外散出 |
+| 环式 | 一条波浪线环绕封面起伏 |
+| 块式 | 填充色块从封面边缘向外扩展 |
+
+### 颜色
+
+可选 MD3 主题色或根据当前封面取色。频谱只在播放页、且封面形状为圆形时显示。
+
+### 频率映射
+
+60 条柱体分布到 12 个扇区，其中两个扇区（1 点、8 点方向）针对低频节奏点做了独立映射。频谱带有触发阈值、峰值衰减与冷却，避免抖动。`,
+
+    visual: `播放页背景三选一，封面形状与旋转可独立设置。
+
+---
+
+### 播放页背景
+
+| 模式 | 说明 |
+| --- | --- |
+| MD3 背景 | 使用主题表面色，跟随深浅色模式 |
+| 封面渐变 | 从封面两角取色，生成顶部 / 中部混合 / 底部的三段式线性渐变 |
+| 流光 | 两组渐变绕中心旋转并交叉叠加，参考 BBPlayer 的实现 |
+
+### 封面形状
+
+MD3 圆角（默认 24dp）或圆形。圆形封面可开启缓慢旋转，一圈 90 秒。
+
+### 封面缓存
+
+封面加载走内存 LRU + 磁盘双层缓存。B 站封面自动携带 Referer，绕过防盗链。
+
+### 底部播放条
+
+底部迷你播放条与播放页共用封面取色逻辑，显示封面、标题、歌手、上一首 / 播放暂停 / 下一首、进度条。两种宽度可选：默认（右侧留出加号按钮空间）或全宽。
+
+### 系统栏适配
+
+渐变与流光模式下，状态栏与导航栏颜色、图标跟随背景自动调整。`,
+
+    lyrics: `LRC 与 YRC 双格式解析，翻译、桌面歌词、搜索与导出一应俱全。
+
+---
+
+### 格式解析
+
+同时支持 LRC 与 YRC（逐字歌词），同一首歌的歌词数据可混合解析：带 \`[mm:ss.xxx]\` 的行按 LRC 解析，以 \`{\` 开头的行按 YRC 解析。当 lrc 字段只含元数据（作词 / 作曲 / 编曲 / 制作人）而 yrc 有正文时，自动切换到 yrc。
+
+### 翻译合并
+
+翻译歌词按时间戳对齐：100 毫秒内精确匹配，未匹配的行扩展至 300 毫秒宽松匹配。
+
+### 显示模式
+
+| 项目 | 选项 |
+| --- | --- |
+| 翻译 | 原文 + 翻译 / 仅显示翻译 / 仅显示原文 |
+| 对齐 | 居中 / 左对齐 / 右对齐 |
+| 字号 | 14 ~ 28sp |
+
+播放进度同步高亮当前行，点击任意歌词行可跳转到对应时间。
+
+### 歌词缓存
+
+按歌曲 ID 缓存到本地 JSON，含 lrc / tlyric / yrc 三个字段，重复播放不再发起网络请求。
+
+### B站歌词匹配
+
+B 站视频的歌词自动匹配：从标题中提取歌名（引号、前缀标记、分隔符），在网易云搜索最多 5 个候选，按标题相似度、歌手、时长打分，60 分以上才采用。
+
+### 歌词搜索
+
+歌词页内可手动搜索网易云歌曲并替换当前歌词，滚动加载每页 30 条，上限 100 条。
+
+### 歌词导出
+
+当前歌词可导出为 LRC 文件，按翻译模式生成单行或双行。
+
+### 桌面歌词
+
+支持浅色、深色、根据封面渐变三种样式，可拖拽。贴边时自动收窄宽度，切换歌曲时立即清空上一首的残留。`,
+
+    library: `收藏夹、歌单导入导出与拖拽排序。
+
+---
+
+### 收藏夹类型
+
+| 类型 | 说明 |
+| --- | --- |
+| 普通文件夹 | 手动创建，可拖拽排序 |
+| 专辑 | 从搜索结果一键收藏整个专辑，带封面和源 ID |
+| 歌手 | 从搜索结果一键收藏整个歌手，带封面和源 ID |
+| 歌单 | 从搜索结果一键收藏整个歌单，带封面和源 ID |
+
+同一源不会重复创建。
+
+### 多归属
+
+一首歌可以同时属于多个收藏夹。删除收藏夹只移除引用，不影响其它收藏夹里的同一首歌。
+
+### 拖拽排序
+
+收藏夹列表与收藏夹内歌曲均支持拖拽排序。
+
+### 歌单导入导出
+
+导出为紧凑单行 JSON，包含歌单类型与源 ID，导入时可还原专辑 / 歌手 / 歌单类型，减少重复收藏。导入时统计成功与跳过的条目数。
+
+旧版 JSON 可根据 \`bili_\` 前缀自动推断 B 站来源。`,
+
+    'cache-export': `两种把音频存到本地的方式，用途不同。
+
+---
+
+### 缓存到软件私有目录
+
+用于离线播放，不影响系统音乐库。进度可取消，同一首歌不会重复下载。文件头会做格式校验（ID3 / FLAC / MP4 / OGG / WAV / CAF / MP3），避免把错误页面当成音频保存。
+
+### 导出到本地音乐目录
+
+导出到 \`/Music/GRPlayer/\`，供系统音乐播放器识别，自动识别 \`.mp3\`、\`.flac\`、\`.m4a\`、\`.mp4\` 等扩展名。
+
+| 限制 | 数值 |
+| --- | --- |
+| 每日导出上限 | 20 个文件 |
+| 两次导出间隔 | 60 秒 |
+| 文件名冲突 | 自动追加序号 |
+
+### 进度与取消
+
+缓存与导出均带进度弹窗，可随时取消。
+
+### 存储权限引导
+
+适配 Android 11+ 所有文件访问权限与旧版存储权限。`,
+
+    floating: `播放条与桌面歌词两种悬浮内容，均需悬浮窗权限。
+
+---
+
+### 悬浮播放条
+
+可拖拽的播放条悬浮在系统上层，功能与底部迷你播放条一致。两种宽度：默认（右侧留出加号按钮空间）或全宽。App 在前台时自动隐藏。
+
+### 桌面歌词
+
+悬浮在系统上层的歌词窗口，可拖拽。样式三选一：浅色、深色、根据封面渐变。贴边时自动收窄宽度，切换歌曲时立即清空上一首的残留。App 在前台时自动隐藏。
+
+### 权限与状态
+
+开启前会检查悬浮窗权限，未授权时引导用户前往系统设置。App 启动与恢复时会校验权限状态，用户在系统设置中撤销权限后，对应开关会自动重置为关闭。`,
+
+    ui: `Material 3 设计，深浅色跟随系统。
+
+---
+
+### 主题
+
+自动跟随系统、浅色、深色三选一。所有页面使用同一套 MD3 色彩角色，切换主题不需要重启。
+
+### 设置分区
+
+设置页按功能分为六类：界面、播放、悬浮窗、频谱、歌词、网络。每类一个独立子页。
+
+### 列表体验
+
+分页加载的列表在插入数据后延迟 350 毫秒才允许触发下一次加载，避免快速滑到底部时列表跳动。拖拽排序只在普通文件夹中启用。
+
+### 全局点击防抖
+
+相邻两次点击间隔小于 350 毫秒时，第二次被忽略。滑动操作不算一次点击，避免滑动后首次点击被误拦截。
+
+### 免责声明
+
+首次启动展示免责声明，按钮带 20 秒倒计时确认。确认后不再展示。`,
+
+    background: `后台播放的几项保障措施。
+
+---
+
+### 前台服务
+
+播放服务使用 \`mediaPlayback\` 前台服务类型，通知栏常驻，播放时不会被系统回收。
+
+### 省电优化引导
+
+首次进入播放页时提示关闭省电优化，状态机记录未知 / 已授权 / 已拒绝三种状态。选择「不再提示」后不再提醒，可在播放页菜单重置。
+
+### 播放控件锁定
+
+进入均衡器页面时暂停播放并锁定播放控件，退出时解锁，避免在调节过程中误触切歌。`,
+
+    update: `从 GitHub Release 读取最新版本号。
+
+---
+
+### 检查策略
+
+进入主页后延迟检查，10 分钟内只查一次，避免触发 GitHub API 限流。有更新时弹出更新日志，可跳转下载或忽略此版本。忽略后不再提示该版本，直到出现更高版本。
+
+### 更新日志
+
+版本更新记录见 [Releases](https://github.com/Gascy37/grplayer-app/releases)。`,
+
+    requirements: `运行环境与权限。
+
+---
+
+### 系统版本
+
+| 版本范围 | 支持情况 |
+| --- | --- |
+| Android 5.0 – 13 | 基础播放、搜索、曲库 |
+| Android 9.0 及以上 | 额外支持 15 段均衡器 |
+
+支持的最低版本是 Android 5.0（Lollipop），最高已适配到 Android 13。均衡器需要 Android 9.0 及以上，频谱需要将封面大图切换为圆形。
+
+### 权限
+
+| 权限 | 用途 |
+| --- | --- |
+| 网络与网络状态 | 搜索、播放、歌词、更新检查 |
+| 存储 | 缓存与导出音频到本地 |
+| 通知 | 播放服务的常驻通知 |
+| 悬浮窗 | 悬浮播放条与桌面歌词（可选） |
+| 忽略省电优化 | 后台播放（可选） |`,
+
+    tech: `主要依赖与实现方式。
+
+---
+
+| 类别 | 内容 |
+| --- | --- |
+| 语言 | Java |
+| UI | AndroidX、Material Components、RecyclerView、ConstraintLayout、TabLayout、Material 3 |
+| 播放 | AndroidX Media3 ExoPlayer、MediaSessionService、Media3 OkHttp DataSource |
+| 音频处理 | Media3 BaseAudioProcessor、FFT、DynamicsProcessing（Android 9+） |
+| 网络 | OkHttp、自定义 JSON API Client、WBI 签名 |
+| 图片 | 自定义 ImageLoader + LruCache + 磁盘缓存，适配不同图片 CDN 的缩略语法与防盗链 |
+| 存储 | SharedPreferences、内部缓存目录、SAF 文件选择器 |
+| 异步 | ExecutorService、Handler、HandlerThread、Choreographer |
+| 歌词 | 自定义 LrcParser，支持 LRC / YRC / 翻译合并 |
+| 构建 | Gradle |
+
+### 模块划分
+
+| 模块 | 职责 |
+| --- | --- |
+| \`net/\` | API Client、签名工具、IP 伪装拦截器 |
+| \`playback/\` | PlayerManager、PlaybackService、频谱音频处理器 |
+| \`ui/\` | MiniPlayer、悬浮播放条、桌面歌词、流光背景、频谱 View |
+| \`data/\` | 收藏库、缓存、导出、歌词缓存、搜索历史、音质学习、均衡器、设置 |
+| \`util/\` | 歌词解析、封面渐变、流光取色、歌词匹配、JSON 歌单、导出弹窗 |`,
+
+    build: `从源码构建并运行。
+
+---
+
+### 构建步骤
+
+1. 使用 Android Studio 打开项目
+2. 等待 Gradle 同步完成
+3. 连接 Android 设备或启动模拟器
+4. 运行应用
+5. 首次启动时按需授予通知、存储 / 所有文件访问、悬浮窗等权限
+6. 均衡器功能需要 Android 9 及以上系统
+7. 频谱功能需要在播放页将封面大图形状切换为圆形后开启
+
+### 配置说明
+
+| 项目 | 说明 |
+| --- | --- |
+| API 地址 | 默认位于 \`ApiClient.BASE_URL\`，如需自部署服务，修改该地址即可 |
+| 密钥缓存 | 部分音频来源依赖签名或临时密钥，密钥会本地缓存，请求会携带来源所需的 Referer |
+| IP 伪装 | 默认关闭，请根据实际使用场景与相关服务条款谨慎开启 |
+| 音质与兜底 | 音质、兜底策略、重试次数、歌词、主题、播放页背景、频谱、悬浮窗等均可在设置页调整 |
+| 音质上限 | 未解锁音质时，播放 / 缓存 / 导出分别限制在可见上限 |
+| 导出限额 | 默认每日最多 20 个文件，成功导出后 60 秒冷却 |
+| 频谱条件 | 仅圆形封面生效，样式与颜色在「设置 → 频谱设置」中调整 |`,
+
+    privacy: `数据存储与网络请求的说明。
+
+---
+
+### 本地存储
+
+收藏夹、设置、缓存、搜索历史、歌词缓存、封面缓存等数据默认保存在本地。
+
+### 网络请求
+
+本项目自身不包含用户画像、广告或主动上传个人数据的逻辑。网络请求会发送至所配置的 API 服务与相关公开 API，请自行确认是否使用。
+
+### IP 伪装
+
+伪装 IP 仅用于降低按 IP 维度限流影响，默认关闭，请遵守相关服务条款与法律法规。`,
+
+    credits: `感谢以下开源项目与生态。
+
+---
+
+- AndroidX
+- Material Components for Android
+- OkHttp
+- AndroidX Media3
+- AndroidIDE
+- 以及所有为 Android 开源社区做出贡献的开发者
+
+同时也感谢 [BBPlayer](https://github.com/bbplayer-app/BBPlayer) 同类音乐播放器项目带来的设计灵感。`,
+
+    license: `MIT License。
+
+---
+
+| 项目 | 内容 |
+| --- | --- |
+| 协议 | MIT License |
+| 价格 | 完全免费 |
+| 商业使用 | 允许 |
+| 修改与分发 | 允许 |
+| 版权要求 | 保留原版权声明与许可文本 |
+
+项目完全免费，源码公开。你可以自由使用、修改、分发本项目，包括商业用途，只需保留原版权声明与许可文本。
+
+本项目仅供个人学习与研究使用，使用时请遵守相关法律法规及各平台的服务条款。详见 [LICENSE](https://github.com/Gascy37/grplayer-app/blob/main/LICENSE)。`
+  };
+
+  function boot() {
+    if (typeof marked === 'undefined') {
+      console.error('marked.js 未加载，页面内容无法渲染');
+      return;
+    }
+
+    /* ---------- 渲染所有 markdown ---------- */
+    Object.keys(pageContent).forEach(function (id) {
+      var section = document.getElementById('page-' + id);
+      if (!section) return;
+      var target = section.querySelector('.md-content');
+      if (!target) return;
+
+      target.innerHTML = marked.parse(pageContent[id]);
+
+      if (id === 'home') {
+        var h1 = target.querySelector('h1');
+        if (h1) {
+          h1.classList.add('hero-title');
+          loadHeroIcon(h1);
+        }
+
+        var ps = target.querySelectorAll('p');
+        Array.prototype.forEach.call(ps, function (p) {
+          var links = p.querySelectorAll('a');
+          if (links.length > 0) {
+            p.classList.add('hero-actions');
+
+            if (links[0]) {
+              links[0].classList.add('btn', 'btn-filled');
+              links[0].insertAdjacentHTML('afterbegin', DOWNLOAD_SVG);
+            }
+
+            if (links[1]) {
+              links[1].classList.add('btn', 'btn-outlined');
+              links[1].insertAdjacentHTML('afterbegin', GITHUB_SVG);
+            }
+          } else {
+            p.classList.add('hero-tagline');
+          }
+        });
+      } else {
+        var firstP = target.querySelector('p');
+        if (firstP) firstP.classList.add('lead');
+      }
+    });
+
+    /* ---------- 导航 ---------- */
+    var app       = document.getElementById('app');
+    var pages     = document.querySelectorAll('.page');
+    var navItems  = document.querySelectorAll('.sidebar .nav-item');
+    var gotoLinks = document.querySelectorAll('[data-page]');
+    var content   = document.getElementById('content');
+    var scrim     = document.getElementById('scrim');
+    var menuBtn   = document.getElementById('menuBtn');
+    var pageTitle = document.getElementById('pageTitle');
+
+    var mq = window.matchMedia('(max-width: 820px)');
+
+    var pageMap = {};
+    pages.forEach(function (p) {
+      pageMap[p.id.replace('page-', '')] = p;
+    });
+
+    function openSidebar() { app.classList.add('sidebar-open'); }
+    function closeSidebar() { app.classList.remove('sidebar-open'); }
+
+    function showPage(id, updateHash) {
+      var target = pageMap[id];
+      if (!target) return;
+
+      pages.forEach(function (p) {
+        p.classList.toggle('active', p === target);
+      });
+
+      navItems.forEach(function (a) {
+        a.classList.toggle('active', a.getAttribute('data-page') === id);
+      });
+
+      var title = target.getAttribute('data-title') || 'GRPlayer';
+      pageTitle.textContent = title;
+      document.title = title === 'GRPlayer'
+        ? 'GRPlayer'
+        : title + ' — GRPlayer';
+
+      content.scrollTop = 0;
+
+      if (updateHash) {
+        var newHash = '#' + id;
+        if (location.hash !== newHash) {
+          history.replaceState(null, '', newHash);
+        }
+      }
+
+      if (mq.matches) closeSidebar();
+    }
+
+    function handleNavClick(e) {
+      var link = e.currentTarget;
+      var id = link.getAttribute('data-page');
+      if (!id) return;
+      e.preventDefault();
+      showPage(id, true);
+    }
+
+    navItems.forEach(function (a) { a.addEventListener('click', handleNavClick); });
+    gotoLinks.forEach(function (a) {
+      if (a.classList.contains('nav-item')) return;
+      a.addEventListener('click', handleNavClick);
+    });
+
+    menuBtn.addEventListener('click', function () {
+      if (app.classList.contains('sidebar-open')) closeSidebar();
+      else openSidebar();
+    });
+
+    scrim.addEventListener('click', closeSidebar);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') closeSidebar();
+    });
+
+    /* ---------- 左边缘右滑手势：打开侧边栏 ---------- */
+    var EDGE_WIDTH = 24;
+    var SWIPE_THRESHOLD = 56;
+
+    var edgeTouch = null;
+
+    document.addEventListener('touchstart', function (e) {
+      if (e.touches.length !== 1) { edgeTouch = null; return; }
+      if (app.classList.contains('sidebar-open')) { edgeTouch = null; return; }
+
+      var t = e.touches[0];
+      if (t.clientX <= EDGE_WIDTH) {
+        edgeTouch = {
+          startX: t.clientX,
+          startY: t.clientY,
+          locked: false
+        };
+      } else {
+        edgeTouch = null;
+      }
+    }, { passive: true });
+
+    document.addEventListener('touchmove', function (e) {
+      if (!edgeTouch) return;
+      if (e.touches.length !== 1) { edgeTouch = null; return; }
+
+      var t = e.touches[0];
+      var dx = t.clientX - edgeTouch.startX;
+      var dy = t.clientY - edgeTouch.startY;
+
+      if (!edgeTouch.locked) {
+        if (Math.abs(dy) > Math.abs(dx) && Math.abs(dy) > 8) {
+          edgeTouch = null;
+          return;
+        }
+        if (dx > 8 && Math.abs(dx) > Math.abs(dy)) {
+          edgeTouch.locked = true;
+        }
+      }
+
+      if (edgeTouch.locked) {
+        if (e.cancelable) e.preventDefault();
+        if (dx > SWIPE_THRESHOLD) {
+          openSidebar();
+          edgeTouch = null;
+        }
+      }
+    }, { passive: false });
+
+    document.addEventListener('touchend', function () {
+      edgeTouch = null;
+    }, { passive: true });
+
+    document.addEventListener('touchcancel', function () {
+      edgeTouch = null;
+    }, { passive: true });
+
+    /* ---------- 初始状态 ---------- */
+    if (!mq.matches) openSidebar();
+    else closeSidebar();
+
+    function onMediaChange(e) {
+      if (e.matches) closeSidebar();
+      else openSidebar();
+    }
+    if (mq.addEventListener) mq.addEventListener('change', onMediaChange);
+    else if (mq.addListener) mq.addListener(onMediaChange);
+
+    var initial = location.hash ? location.hash.slice(1) : 'home';
+    if (!pageMap[initial]) initial = 'home';
+    showPage(initial, false);
+
+    window.addEventListener('hashchange', function () {
+      var id = location.hash ? location.hash.slice(1) : 'home';
+      if (!pageMap[id]) id = 'home';
+      showPage(id, false);
+    });
+  }
+
+  loadMarked(boot);
+
+})();
+</script>
+
+</body>
+</html>
