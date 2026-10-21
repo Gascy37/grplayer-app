@@ -17,9 +17,9 @@
 
 ## 屏幕截图
 
-| 首页 | 播放器 | 歌词页 | 设置 |
+| 首页 | 播放器 | 歌词页 | 设置页 |
 | :--: | :--: | :--: | :--: |
-| ![首页](./images/home.png) | ![播放器](./images/player.png) | ![歌词页](./images/lyrics.png) | ![设置](./images/settings.png) |
+| ![首页](./images/home.png) | ![播放器](./images/player.png) | ![歌词页](./images/lyrics.png) | ![设置页](./images/settings.png) |
 
 ## 主要功能
 
