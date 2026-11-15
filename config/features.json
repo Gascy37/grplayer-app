@@ -1,0 +1,10 @@
+{
+  "schemaVersion": 1,
+  "updatedAt": 1731000000000,
+  "features": {
+    "spoof_ip": {
+      "state": "force_off",
+      "reason": "功能观察中，不被开放"
+    }
+  }
+}
